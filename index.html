@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5형식 목적보어 훈련소 (마인드맵 완벽 적용 + 200제 문제은행)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 650px;
+            position: relative;
+        }
+        
+        #set-selection { text-align: center; }
+        .set-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .set-btn {
+            background-color: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .set-btn:hover { background-color: #e2e8f0; border-color: #cbd5e0; transform: translateY(-2px); }
+        .set-desc { font-size: 0.85em; color: #ef4444; font-weight: bold; background-color: #fee2e2; padding: 4px 10px; border-radius: 20px;}
+        
+        #quiz-screen, #result-screen { display: none; }
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .question-type {
+            font-size: 0.9em;
+            color: #2563eb;
+            background-color: #dbeafe;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 700;
+        }
+        
+        .timer-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .time-text {
+            font-size: 1.5em;
+            font-weight: 800;
+            color: #0f172a;
+            min-width: 50px;
+        }
+        .time-text.warning { color: #ea580c; }
+        .time-text.danger { color: #dc2626; animation: pulse 1s infinite; }
+        .timer-container {
+            flex-grow: 1;
+            height: 10px;
+            background-color: #e2e8f0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .timer-bar {
+            height: 100%;
+            background-color: #10b981;
+            width: 100%;
+            transition: width 1s linear, background-color 0.3s;
+        }
+        .timer-bar.warning { background-color: #f59e0b; }
+        .timer-bar.danger { background-color: #ef4444; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .question-text {
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 25px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+        .options-grid { display: flex; flex-direction: column; gap: 10px; }
+        .option-btn {
+            background-color: #fff;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 1.05em;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: #1e293b;
+        }
+        .option-btn:hover:not(:disabled) { border-color: #3b82f6; background-color: #eff6ff; }
+        .option-btn.correct { background-color: #d1fae5; border-color: #10b981; color: #065f46; font-weight: bold; }
+        .option-btn.wrong { background-color: #fee2e2; border-color: #ef4444; color: #991b1b; }
+        .option-btn:disabled { cursor: not-allowed; }
+        
+        .feedback-box {
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.4s;
+        }
+
+        .feedback-title { font-size: 1.3em; font-weight: 800; margin-bottom: 15px; }
+        .explanation-box {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            line-height: 1.5;
+            font-size: 0.95em;
+            text-align: left;
+        }
+        .exp-translate { background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e0; }
+        .exp-wrong { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .exp-correct { background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .action-btn {
+            flex: 1;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover { background-color: #1d4ed8; transform: translateY(-2px); }
+        .action-btn.secondary { background-color: #64748b; }
+        .action-btn.secondary:hover { background-color: #475569; }
+        .action-btn.review { background-color: #ea580c; }
+        .action-btn.review:hover { background-color: #c2410c; }
+        .action-btn.danger { background-color: #ef4444; }
+        .action-btn.danger:hover { background-color: #dc2626; }
+        
+        #review-controls {
+            display: none; 
+            flex-direction: column; 
+            gap: 10px; 
+            margin-top: 25px;
+        }
+        
+        #next-btn { display: none; width: 100%; margin-top: 20px; }
+
+        #quit-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 30px;
+            font-size: 1.05em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            transition: all 0.2s;
+            display: none; 
+            z-index: 1000;
+        }
+        #quit-btn:hover {
+            background-color: #dc2626;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+        }
+
+        .charts-wrapper {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 25px 0;
+            gap: 20px;
+            height: 220px;
+        }
+        .chart-box {
+            flex: 1;
+            height: 100%;
+            position: relative;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        @media (max-width: 600px) {
+            #quit-btn { bottom: 20px; right: 20px; padding: 12px 20px; font-size: 0.95em; }
+            .charts-wrapper { flex-direction: column; height: 400px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <div id="set-selection">
+        <h1 style="color: #1e40af; margin-bottom: 5px;">5형식 목적보어 훈련소</h1>
+        <p style="color: #64748b; margin-bottom: 30px;">문제은행에서 무작위로 10문제씩 출제됩니다!</p>
+        
+        <div class="set-grid" id="set-buttons"></div>
+        
+        <div id="review-controls">
+            <button class="action-btn review" onclick="startMainReview()">
+                📝 누적 오답 노트 풀기 (<span id="wrong-count">0</span>문제)
+            </button>
+            <button class="action-btn danger" style="padding: 12px; font-size: 1em;" onclick="resetWrongAnswers()">
+                🗑️ 오답 기록 초기화
+            </button>
+        </div>
+    </div>
+
+    <div id="quiz-screen">
+        <div class="quiz-header">
+            <span class="question-type" id="q-type">유형</span>
+            <span id="q-progress" style="font-weight: bold; color: #475569;">1 / 10</span>
+        </div>
+        
+        <div class="timer-wrapper">
+            <div class="time-text" id="time-text">15초</div>
+            <div class="timer-container"><div class="timer-bar" id="timer-bar"></div></div>
+        </div>
+
+        <div class="question-text" id="q-text">질문</div>
+        <div class="options-grid" id="options-container"></div>
+        <div class="feedback-box" id="feedback"></div>
+        <button class="action-btn" id="next-btn" onclick="nextQuestion()">다음 문제로 ➔</button>
+    </div>
+
+    <div id="result-screen" style="text-align: center;">
+        <h2 style="font-size: 2.2em; color: #1e40af; margin-bottom: 10px;" id="result-title">훈련 완료!</h2>
+        <p id="final-score" style="font-size: 1.4em; font-weight: bold; margin-bottom: 10px;"></p>
+        
+        <div class="charts-wrapper">
+            <div class="chart-box">
+                <canvas id="donutChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+
+        <p id="result-msg" style="color: #64748b; margin-bottom: 30px; line-height: 1.5;"></p>
+        <div class="btn-group">
+            <button class="action-btn secondary" onclick="goToMain()">메인 메뉴로</button>
+            <button class="action-btn review" id="review-btn" onclick="startReview()" style="display:none;">📝 방금 틀린 문제 복습</button>
+        </div>
+    </div>
+</div>
+
+<button id="quit-btn" onclick="quitQuiz()">종료 🚪</button>
+
+<script>
+    // 문장을 자연스럽고 고유하게 생성하기 위한 주어, 부사 조합
+    const variations = [
+        { s_en: "My father", s_ko: "나의 아버지는", c_en: "yesterday", c_ko: "어제" },
+        { s_en: "The teacher", s_ko: "선생님은", c_en: "sincerely", c_ko: "진심으로" },
+        { s_en: "The manager", s_ko: "매니저는", c_en: "immediately", c_ko: "즉시" },
+        { s_en: "My friend", s_ko: "내 친구는", c_en: "unexpectedly", c_ko: "뜻밖에" },
+        { s_en: "The boss", s_ko: "사장은", c_en: "firmly", c_ko: "단호하게" },
+        { s_en: "The coach", s_ko: "코치는", c_en: "finally", c_ko: "마침내" },
+        { s_en: "The director", s_ko: "감독은", c_en: "quietly", c_ko: "조용히" },
+        { s_en: "The officer", s_ko: "경찰관은", c_en: "carefully", c_ko: "주의 깊게" },
+        { s_en: "The expert", s_ko: "전문가는", c_en: "gently", c_ko: "부드럽게" },
+        { s_en: "The leader", s_ko: "리더는", c_en: "in the end", c_ko: "결국" }
+    ];
+
+    const baseSets = [
+        // Set 1: 명사/형용사 보어 & to부정사 목적보어 (150제 = 원본 20 + 생성 130)
+        [
+            // 원본 20제 (지정된 동사만 사용됨: name, call, make, keep, find, want, allow, ask, tell, order, advise)
+            { type: "명사 보어 (name)", question: "The committee named him ________.", translation: "위원회는 그를 회장으로 임명했다.", options: [ { text: "president", isCorrect: true, explanation: "동사 name은 목적보어로 명사를 바로 취합니다." }, { text: "as president", isCorrect: false, explanation: "[주의] name은 보어 앞에 as를 사용하지 않습니다." }, { text: "to president", isCorrect: false, explanation: "[주의] name은 보어 앞에 to를 사용하지 않습니다." }, { text: "be president", isCorrect: false, explanation: "be동사를 추가할 필요가 없습니다." } ] },
+            { type: "명사 보어 (call)", question: "People call the big dog ________.", translation: "사람들은 그 큰 개를 곰이라고 부른다.", options: [ { text: "a bear", isCorrect: true, explanation: "동사 call은 목적보어로 명사를 취합니다." }, { text: "as a bear", isCorrect: false, explanation: "[주의] call은 보어 앞에 as를 사용하지 않습니다." }, { text: "to a bear", isCorrect: false, explanation: "to는 불필요합니다." }, { text: "be a bear", isCorrect: false, explanation: "be동사는 불필요합니다." } ] },
+            { type: "명사 보어 (make)", question: "Her effort made her ________.", translation: "그녀의 노력은 그녀를 스타로 만들었다.", options: [ { text: "a star", isCorrect: true, explanation: "make는 목적보어로 명사를 취할 수 있습니다." }, { text: "as a star", isCorrect: false, explanation: "[주의] make는 보어 앞에 as를 사용하지 않습니다." }, { text: "to a star", isCorrect: false, explanation: "to는 불필요합니다." }, { text: "be a star", isCorrect: false, explanation: "be동사는 불필요합니다." } ] },
+            { type: "형용사 보어 (make)", question: "The good news made me ________.", translation: "그 좋은 소식은 나를 행복하게 만들었다.", options: [ { text: "happy", isCorrect: true, explanation: "상태를 설명할 때는 형용사 보어를 씁니다." }, { text: "happily", isCorrect: false, explanation: "[주의] 보어 자리에 부사(ly)는 올 수 없습니다." }, { text: "to be happy", isCorrect: false, explanation: "to be는 생략하고 형용사만 씁니다." }, { text: "be happy", isCorrect: false, explanation: "[주의] be동사 원형을 함께 쓰지 않습니다." } ] },
+            { type: "형용사 보어 (keep)", question: "This coat will keep you ________.", translation: "이 코트가 당신을 따뜻하게 유지해 줄 것입니다.", options: [ { text: "warm", isCorrect: true, explanation: "동사 keep은 목적어의 상태를 나타내는 형용사 보어를 취합니다." }, { text: "warmly", isCorrect: false, explanation: "[주의] 보어 자리에 부사는 올 수 없습니다." }, { text: "to warm", isCorrect: false, explanation: "형용사가 자연스럽습니다." }, { text: "be warm", isCorrect: false, explanation: "[주의] be동사를 쓰지 않습니다." } ] },
+            { type: "형용사 보어 (find)", question: "I found the movie very ________.", translation: "나는 그 영화가 매우 흥미롭다는 것을 알았다.", options: [ { text: "interesting", isCorrect: true, explanation: "find는 목적보어로 형용사(분사)를 취합니다." }, { text: "interestingly", isCorrect: false, explanation: "[주의] 부사는 보어가 될 수 없습니다." }, { text: "to be interestingly", isCorrect: false, explanation: "부사는 틀립니다." }, { text: "interest", isCorrect: false, explanation: "상태를 나타내는 분사 형태가 필요합니다." } ] },
+            { type: "to부정사 (want)", question: "I want you ________ the door.", translation: "나는 네가 문을 열기를 원한다.", options: [ { text: "to open", isCorrect: true, explanation: "want는 목적보어로 'to + 동사원형'을 취합니다." }, { text: "open", isCorrect: false, explanation: "동사원형은 안 됩니다." }, { text: "opening", isCorrect: false, explanation: "V-ing는 안 됩니다." }, { text: "opened", isCorrect: false, explanation: "수동의 의미가 아니므로 틀립니다." } ] },
+            { type: "to부정사 (allow)", question: "She allowed me ________ early.", translation: "그녀는 내가 일찍 떠나는 것을 허락했다.", options: [ { text: "to leave", isCorrect: true, explanation: "allow는 목적보어로 'to부정사'를 취합니다." }, { text: "leave", isCorrect: false, explanation: "동사원형은 안 됩니다." }, { text: "leaving", isCorrect: false, explanation: "V-ing는 안 됩니다." }, { text: "left", isCorrect: false, explanation: "과거형이나 과거분사는 틀립니다." } ] },
+            { type: "to부정사 (ask)", question: "He asked his friend ________ him.", translation: "그는 친구에게 자기를 도와달라고 요청했다.", options: [ { text: "to help", isCorrect: true, explanation: "ask는 5형식에서 'to부정사'를 취합니다." }, { text: "help", isCorrect: false, explanation: "동사원형을 쓰지 않습니다." }, { text: "helping", isCorrect: false, explanation: "V-ing를 쓰지 않습니다." }, { text: "helped", isCorrect: false, explanation: "수동이 아니므로 틀립니다." } ] },
+            { type: "to부정사 (tell)", question: "The teacher told us ________ quiet.", translation: "선생님은 우리에게 조용히 하라고 말씀하셨다.", options: [ { text: "to be", isCorrect: true, explanation: "tell은 목적보어로 'to부정사'를 취합니다." }, { text: "be", isCorrect: false, explanation: "동사원형을 쓰지 않습니다." }, { text: "being", isCorrect: false, explanation: "V-ing를 쓰지 않습니다." }, { text: "been", isCorrect: false, explanation: "틀린 형태입니다." } ] },
+            { type: "to부정사 (order)", question: "The general ordered them ________.", translation: "장군은 그들에게 공격하라고 명령했다.", options: [ { text: "to attack", isCorrect: true, explanation: "order는 목적보어로 'to부정사'를 취합니다." }, { text: "attack", isCorrect: false, explanation: "동사원형을 쓰지 않습니다." }, { text: "attacking", isCorrect: false, explanation: "V-ing를 쓰지 않습니다." }, { text: "attacked", isCorrect: false, explanation: "과거분사는 틀립니다." } ] },
+            { type: "to부정사 (advise)", question: "The doctor advised him ________ a rest.", translation: "의사는 그에게 휴식을 취하라고 조언했다.", options: [ { text: "to take", isCorrect: true, explanation: "advise는 목적보어로 'to부정사'를 취합니다." }, { text: "take", isCorrect: false, explanation: "동사원형을 쓰지 않습니다." }, { text: "taking", isCorrect: false, explanation: "V-ing를 쓰지 않습니다." }, { text: "taken", isCorrect: false, explanation: "수동태 문맥이 아닙니다." } ] },
+            { type: "명사 보어 (name)", question: "They named the ship ________.", translation: "그들은 그 배의 이름을 타이타닉이라고 지었다.", options: [ { text: "Titanic", isCorrect: true, explanation: "name은 명사 보어를 바로 취합니다." }, { text: "as Titanic", isCorrect: false, explanation: "[주의] as를 사용하지 않습니다." }, { text: "to Titanic", isCorrect: false, explanation: "[주의] to를 사용하지 않습니다." }, { text: "be Titanic", isCorrect: false, explanation: "be동사는 불필요합니다." } ] },
+            { type: "명사 보어 (call)", question: "My friends call me ________.", translation: "내 친구들은 나를 천재라고 부른다.", options: [ { text: "Genius", isCorrect: true, explanation: "call은 명사를 바로 보어로 취합니다." }, { text: "as Genius", isCorrect: false, explanation: "[주의] as를 쓰지 않습니다." }, { text: "to Genius", isCorrect: false, explanation: "to를 쓰지 않습니다." }, { text: "be Genius", isCorrect: false, explanation: "be동사는 쓰지 않습니다." } ] },
+            { type: "형용사 보어 (make)", question: "The noise made him ________.", translation: "그 소음은 그를 화나게 만들었다.", options: [ { text: "angry", isCorrect: true, explanation: "상태 설명이므로 형용사가 옵니다." }, { text: "angrily", isCorrect: false, explanation: "[주의] 부사는 올 수 없습니다." }, { text: "to angry", isCorrect: false, explanation: "to는 불필요합니다." }, { text: "be angry", isCorrect: false, explanation: "[주의] be동사를 쓰지 않습니다." } ] },
+            { type: "형용사 보어 (keep)", question: "Please keep your room ________.", translation: "당신의 방을 깨끗하게 유지하세요.", options: [ { text: "clean", isCorrect: true, explanation: "keep의 목적보어로 형용사 clean이 맞습니다." }, { text: "cleanly", isCorrect: false, explanation: "[주의] 부사는 보어 자리에 올 수 없습니다." }, { text: "to clean", isCorrect: false, explanation: "형용사 상태가 자연스럽습니다." }, { text: "cleaning", isCorrect: false, explanation: "일반 형용사 clean을 씁니다." } ] },
+            { type: "형용사 보어 (find)", question: "We found the test ________.", translation: "우리는 그 시험이 어렵다는 것을 알았다.", options: [ { text: "difficult", isCorrect: true, explanation: "find의 목적보어로 형용사가 옵니다." }, { text: "difficultly", isCorrect: false, explanation: "[주의] 부사는 쓸 수 없습니다." }, { text: "to difficult", isCorrect: false, explanation: "to는 불필요합니다." }, { text: "be difficult", isCorrect: false, explanation: "[주의] be동사를 쓰지 않습니다." } ] },
+            { type: "to부정사 (want)", question: "I want my son ________ a doctor.", translation: "나는 내 아들이 의사가 되기를 원한다.", options: [ { text: "to become", isCorrect: true, explanation: "want는 목적보어로 'to부정사'를 취합니다." }, { text: "become", isCorrect: false, explanation: "원형을 쓰면 안 됩니다." }, { text: "becoming", isCorrect: false, explanation: "V-ing를 쓰지 않습니다." }, { text: "became", isCorrect: false, explanation: "과거형은 올 수 없습니다." } ] },
+            { type: "to부정사 (tell)", question: "The mother told her child ________.", translation: "어머니는 아이에게 뛰지 말라고 말했다.", options: [ { text: "not to run", isCorrect: true, explanation: "tell은 to부정사를 취하며, 부정은 to 앞에 not을 씁니다." }, { text: "to not run", isCorrect: false, explanation: "not의 위치는 to 앞입니다." }, { text: "not run", isCorrect: false, explanation: "to가 필요합니다." }, { text: "don't run", isCorrect: false, explanation: "틀린 문법입니다." } ] },
+            { type: "to부정사 (order)", question: "The manager ordered them ________ by today.", translation: "매니저는 그들에게 오늘까지 일을 끝내라고 지시했다.", options: [ { text: "to finish", isCorrect: true, explanation: "order는 목적보어로 'to부정사'를 취합니다." }, { text: "finish", isCorrect: false, explanation: "동사원형을 쓰지 않습니다." }, { text: "finishing", isCorrect: false, explanation: "V-ing를 쓰지 않습니다." }, { text: "finished", isCorrect: false, explanation: "과거분사는 틀립니다." } ] },
+            
+            // 130제 동적 생성 (13개 패턴 x 10가지 주어/상황 = 130문항, 오직 지정된 동사만 사용됨)
+            ...Array.from({length: 130}).map((_, i) => {
+                const varData = variations[Math.floor(i / 13) % 10];
+                const types = [
+                    { t: "to부정사 (expect)", q: `${varData.s_en} expected him ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 그가 오기를 기대했다.`, a: "to arrive", w1: "arrive", w2: "arriving", w3: "arrived", exp: "expect는 목적보어로 'to부정사'를 취합니다." },
+                    { t: "형용사 보어 (keep)", q: `${varData.s_en} kept the room ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 방을 따뜻하게 유지했다.`, a: "warm", w1: "warmly", w2: "to warm", w3: "warming", exp: "keep은 목적어의 상태를 나타내는 형용사 보어를 취합니다." },
+                    { t: "명사 보어 (call)", q: `${varData.s_en} called her ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 그녀를 천재라고 불렀다.`, a: "a genius", w1: "as a genius", w2: "to a genius", w3: "be a genius", exp: "call은 명사 보어를 바로 취합니다." },
+                    { t: "to부정사 (want)", q: `${varData.s_en} wanted us ________ inside ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 우리가 안에 머물기를 원했다.`, a: "to stay", w1: "stay", w2: "staying", w3: "stayed", exp: "want는 목적보어로 'to부정사'를 취합니다." },
+                    { t: "to부정사 (tell)", q: `${varData.s_en} told him ________ the work ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 그에게 일을 끝내라고 말했다.`, a: "to finish", w1: "finish", w2: "finishing", w3: "finished", exp: "tell은 목적보어로 'to부정사'를 취합니다." },
+                    { t: "형용사 보어 (make)", q: `${varData.s_en} made me ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 나를 행복하게 만들었다.`, a: "happy", w1: "happily", w2: "to be happy", w3: "be happy", exp: "make는 상태를 나타내는 형용사 보어를 취합니다." },
+                    { t: "to부정사 (ask)", q: `${varData.s_en} asked them ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 그들에게 도와달라고 요청했다.`, a: "to help", w1: "help", w2: "helping", w3: "helped", exp: "ask는 목적보어로 'to부정사'를 취합니다." },
+                    { t: "to부정사 (allow)", q: `${varData.s_en} allowed her ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 그녀가 떠나는 것을 허락했다.`, a: "to leave", w1: "leave", w2: "leaving", w3: "left", exp: "allow는 목적보어로 'to부정사'를 취합니다." },
+                    { t: "형용사 보어 (find)", q: `${varData.s_en} found the book ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 그 책이 흥미롭다는 것을 알았다.`, a: "interesting", w1: "interestingly", w2: "interest", w3: "interested", exp: "find는 목적보어로 형용사(분사)를 취합니다." },
+                    { t: "to부정사 (order)", q: `${varData.s_en} ordered us ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 우리에게 멈추라고 명령했다.`, a: "to stop", w1: "stop", w2: "stopping", w3: "stopped", exp: "order는 목적보어로 'to부정사'를 취합니다." },
+                    { t: "명사 보어 (name)", q: `${varData.s_en} named the project ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 프로젝트 이름을 아폴로라고 지었다.`, a: "Apollo", w1: "as Apollo", w2: "to Apollo", w3: "be Apollo", exp: "name은 명사 보어를 바로 취합니다." },
+                    { t: "to부정사 (advise)", q: `${varData.s_en} advised him ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 그에게 휴식을 취하라고 조언했다.`, a: "to rest", w1: "rest", w2: "resting", w3: "rested", exp: "advise는 목적보어로 'to부정사'를 취합니다." },
+                    { t: "명사 보어 (make)", q: `${varData.s_en} made him ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 그를 리더로 만들었다.`, a: "a leader", w1: "to a leader", w2: "as a leader", w3: "be a leader", exp: "make는 목적보어로 명사를 취할 수 있습니다." }
+                ];
+                const item = types[i % 13];
+                return {
+                    type: item.t, question: item.q, translation: item.tr,
+                    options: [
+                        { text: item.a, isCorrect: true, explanation: item.exp },
+                        { text: item.w1, isCorrect: false, explanation: "동사원형이나 부사는 올 수 없습니다." },
+                        { text: item.w2, isCorrect: false, explanation: "V-ing나 전치사는 적절하지 않습니다." },
+                        { text: item.w3, isCorrect: false, explanation: "문맥에 맞지 않는 형태입니다." }
+                    ]
+                };
+            })
+        ],
+        // Set 2: 사역/지각/준사역 동사 (150제 = 원본 20 + 생성 130)
+        [
+            // 원본 20제 (지정된 동사만 사용됨: make, let, have, see, watch, hear, get, help)
+            { type: "사역동사 (make)", question: "The boss made him ________ overtime.", translation: "사장은 그에게 강제로 초과 근무를 하게 했다.", options: [ { text: "work", isCorrect: true, explanation: "사역동사 make는 목적보어로 '동사원형'을 취합니다." }, { text: "to work", isCorrect: false, explanation: "to부정사는 올 수 없습니다." }, { text: "working", isCorrect: false, explanation: "V-ing는 올 수 없습니다." }, { text: "worked", isCorrect: false, explanation: "능동태 문장이므로 틀립니다." } ] },
+            { type: "사역동사 (let)", question: "Her mother let her ________ to the party.", translation: "그녀의 어머니는 그녀가 파티에 가는 것을 허락했다.", options: [ { text: "go", isCorrect: true, explanation: "사역동사 let은 목적보어로 '동사원형'을 취합니다." }, { text: "to go", isCorrect: false, explanation: "to부정사는 올 수 없습니다." }, { text: "going", isCorrect: false, explanation: "V-ing는 올 수 없습니다." }, { text: "gone", isCorrect: false, explanation: "과거분사는 올 수 없습니다." } ] },
+            { type: "사역동사 (have)", question: "I had the mechanic ________ my car.", translation: "나는 정비사에게 내 차를 수리하게 시켰다.", options: [ { text: "fix", isCorrect: true, explanation: "사역동사 have 능동태에서는 '동사원형'을 취합니다." }, { text: "to fix", isCorrect: false, explanation: "to부정사는 올 수 없습니다." }, { text: "fixing", isCorrect: false, explanation: "V-ing는 올 수 없습니다." }, { text: "fixed", isCorrect: false, explanation: "정비사가 직접 고치는 능동이므로 틀립니다." } ] },
+            { type: "지각동사 (see)", question: "I saw a man ________ into the building.", translation: "나는 한 남자가 건물 안으로 뛰어 들어가는 것을 보았다.", options: [ { text: "run", isCorrect: true, explanation: "지각동사 see는 목적보어로 '동사원형'이나 'V-ing'를 취합니다." }, { text: "to run", isCorrect: false, explanation: "to부정사는 절대 쓸 수 없습니다." }, { text: "runs", isCorrect: false, explanation: "현재시제 동사 변화형은 올 수 없습니다." }, { text: "ran", isCorrect: false, explanation: "과거형은 올 수 없습니다." } ] },
+            { type: "지각동사 (watch)", question: "We watched the children ________ soccer.", translation: "우리는 아이들이 축구하는 것을 지켜보았다.", options: [ { text: "playing", isCorrect: true, explanation: "지각동사 watch는 목적보어로 'V-ing'나 '동사원형'을 취합니다." }, { text: "to play", isCorrect: false, explanation: "to부정사는 쓸 수 없습니다." }, { text: "played", isCorrect: false, explanation: "능동이므로 과거분사는 틀립니다." }, { text: "plays", isCorrect: false, explanation: "단수 변화형은 쓸 수 없습니다." } ] },
+            { type: "지각동사 (hear)", question: "I heard someone ________ my name.", translation: "나는 누군가가 내 이름을 부르는 것을 들었다.", options: [ { text: "call", isCorrect: true, explanation: "지각동사 hear는 목적보어로 '동사원형'이나 'V-ing'를 취합니다." }, { text: "to call", isCorrect: false, explanation: "to부정사는 쓸 수 없습니다." }, { text: "called", isCorrect: false, explanation: "능동이므로 틀립니다." }, { text: "calls", isCorrect: false, explanation: "변화형은 쓸 수 없습니다." } ] },
+            { type: "준사역동사 (get)", question: "I got my brother ________ my computer.", translation: "나는 내 남동생에게 내 컴퓨터를 고치도록 했다.", options: [ { text: "to fix", isCorrect: true, explanation: "[주의] 준사역동사 get은 능동일 때 반드시 'to부정사'를 취합니다." }, { text: "fix", isCorrect: false, explanation: "사역동사와 달리 동사원형을 쓰지 않습니다." }, { text: "fixing", isCorrect: false, explanation: "V-ing를 쓰지 않습니다." }, { text: "fixed", isCorrect: false, explanation: "동생이 직접 고치는 것이므로 수동이 아닙니다." } ] },
+            { type: "준사역동사 (help)", question: "She helped me ________ the heavy box.", translation: "그녀는 내가 무거운 상자를 옮기는 것을 도왔다.", options: [ { text: "carry", isCorrect: true, explanation: "help는 '동사원형'이나 'to부정사'를 취할 수 있습니다. (to 생략 가능)" }, { text: "carrying", isCorrect: false, explanation: "V-ing는 올 수 없습니다." }, { text: "carried", isCorrect: false, explanation: "과거분사는 틀립니다." }, { text: "carries", isCorrect: false, explanation: "동사 변화형은 올 수 없습니다." } ] },
+            { type: "사역동사 (make)", question: "The sad movie made everyone ________.", translation: "그 슬픈 영화는 모두를 울게 만들었다.", options: [ { text: "cry", isCorrect: true, explanation: "사역동사 make는 '동사원형'을 취합니다." }, { text: "to cry", isCorrect: false, explanation: "to부정사는 올 수 없습니다." }, { text: "crying", isCorrect: false, explanation: "V-ing는 올 수 없습니다." }, { text: "cried", isCorrect: false, explanation: "능동이므로 과거분사는 틀립니다." } ] },
+            { type: "사역동사 (let)", question: "My father won't let me ________ his car.", translation: "아버지는 내가 그의 차를 운전하는 것을 허락하지 않으실 것이다.", options: [ { text: "drive", isCorrect: true, explanation: "사역동사 let은 '동사원형'을 취합니다." }, { text: "to drive", isCorrect: false, explanation: "to부정사는 쓸 수 없습니다." }, { text: "driving", isCorrect: false, explanation: "V-ing는 쓸 수 없습니다." }, { text: "driven", isCorrect: false, explanation: "과거분사는 틀립니다." } ] },
+            { type: "사역동사 (have)", question: "She had her students ________ an essay.", translation: "그녀는 학생들에게 에세이를 쓰게 시켰다.", options: [ { text: "write", isCorrect: true, explanation: "사역동사 have 능동형은 '동사원형'을 씁니다." }, { text: "to write", isCorrect: false, explanation: "to부정사는 올 수 없습니다." }, { text: "writing", isCorrect: false, explanation: "V-ing는 올 수 없습니다." }, { text: "written", isCorrect: false, explanation: "학생들이 직접 쓰므로 수동형은 틀립니다." } ] },
+            { type: "지각동사 (see)", question: "I saw the thief ________ the bag.", translation: "나는 도둑이 가방을 훔치는 것을 보았다.", options: [ { text: "steal", isCorrect: true, explanation: "지각동사 see는 '동사원형'이나 'V-ing'를 씁니다." }, { text: "to steal", isCorrect: false, explanation: "to부정사는 안 됩니다." }, { text: "stolen", isCorrect: false, explanation: "도둑이 직접 훔치므로 능동태입니다." }, { text: "steals", isCorrect: false, explanation: "단수 변화형은 틀립니다." } ] },
+            { type: "지각동사 (watch)", question: "We watched the sun ________.", translation: "우리는 해가 지는 것을 지켜보았다.", options: [ { text: "set", isCorrect: true, explanation: "지각동사 watch 뒤에 '동사원형'이 올 수 있습니다." }, { text: "to set", isCorrect: false, explanation: "to부정사는 안 됩니다." }, { text: "sets", isCorrect: false, explanation: "동사 변화형은 안 됩니다." }, { text: "is setting", isCorrect: false, explanation: "문맥상 맞지 않는 동사형입니다." } ] },
+            { type: "지각동사 (hear)", question: "She heard the baby ________ in the next room.", translation: "그녀는 옆방에서 아기가 우는 것을 들었다.", options: [ { text: "crying", isCorrect: true, explanation: "지각동사 hear는 'V-ing'를 취해 진행의 의미를 강조할 수 있습니다." }, { text: "to cry", isCorrect: false, explanation: "to부정사는 안 됩니다." }, { text: "cries", isCorrect: false, explanation: "단수 변화형은 안 됩니다." }, { text: "cried", isCorrect: false, explanation: "아기가 스스로 울고 있으므로 수동이 아닙니다." } ] },
+            { type: "준사역동사 (get)", question: "He got his friend ________ him some money.", translation: "그는 친구에게 돈을 좀 빌려달라고 (설득하여) 하게 했다.", options: [ { text: "to lend", isCorrect: true, explanation: "[주의] get은 의미상 사역이지만 형태상 반드시 'to부정사'를 취합니다." }, { text: "lend", isCorrect: false, explanation: "동사원형은 안 됩니다." }, { text: "lending", isCorrect: false, explanation: "V-ing는 안 됩니다." }, { text: "lent", isCorrect: false, explanation: "과거분사는 안 됩니다." } ] },
+            { type: "준사역동사 (help)", question: "My friend helped me ________ the math problem.", translation: "내 친구는 내가 수학 문제를 푸는 것을 도와주었다.", options: [ { text: "solve", isCorrect: true, explanation: "help는 '동사원형' 혹은 'to부정사'를 취합니다." }, { text: "solving", isCorrect: false, explanation: "V-ing는 올 수 없습니다." }, { text: "solved", isCorrect: false, explanation: "과거분사는 올 수 없습니다." }, { text: "solves", isCorrect: false, explanation: "동사 변화형은 올 수 없습니다." } ] },
+            { type: "사역동사 (make)", question: "The funny clown made the kids ________.", translation: "그 웃긴 피에로는 아이들을 웃게 만들었다.", options: [ { text: "laugh", isCorrect: true, explanation: "사역동사 make는 '동사원형'을 씁니다." }, { text: "to laugh", isCorrect: false, explanation: "to부정사를 쓰지 않습니다." }, { text: "laughing", isCorrect: false, explanation: "V-ing를 쓰지 않습니다." }, { text: "laughed", isCorrect: false, explanation: "과거분사를 쓰지 않습니다." } ] },
+            { type: "사역동사 (let)", question: "Let him ________ what he wants.", translation: "그가 원하는 것을 하도록 내버려 두어라.", options: [ { text: "do", isCorrect: true, explanation: "사역동사 let은 '동사원형'을 씁니다." }, { text: "to do", isCorrect: false, explanation: "to부정사를 쓰지 않습니다." }, { text: "doing", isCorrect: false, explanation: "V-ing를 쓰지 않습니다." }, { text: "does", isCorrect: false, explanation: "동사 변화형을 쓰지 않습니다." } ] },
+            { type: "지각동사 (hear)", question: "Did you hear the phone ________?", translation: "너 전화기 울리는 소리 들었어?", options: [ { text: "ring", isCorrect: true, explanation: "지각동사 hear는 '동사원형'이나 'V-ing'를 씁니다." }, { text: "to ring", isCorrect: false, explanation: "to부정사는 안 됩니다." }, { text: "rang", isCorrect: false, explanation: "과거형을 쓰지 않습니다." }, { text: "rings", isCorrect: false, explanation: "동사 변화형을 쓰지 않습니다." } ] },
+            { type: "준사역동사 (get)", question: "I couldn't get the machine ________.", translation: "나는 그 기계가 작동하게 만들 수 없었다.", options: [ { text: "to work", isCorrect: true, explanation: "[주의] get은 능동 관계일 때 반드시 'to부정사'를 취합니다." }, { text: "work", isCorrect: false, explanation: "동사원형을 쓰지 않습니다." }, { text: "working", isCorrect: false, explanation: "V-ing를 쓰지 않습니다." }, { text: "worked", isCorrect: false, explanation: "과거분사는 어색합니다." } ] },
+            
+            // 130제 동적 생성 (13개 패턴 x 10가지 주어/상황 = 130문항, 오직 지정된 동사만 사용됨)
+            ...Array.from({length: 130}).map((_, i) => {
+                const varData = variations[Math.floor(i / 13) % 10];
+                const types = [
+                    { t: "사역동사 (make)", q: `${varData.s_en} made him ________ overtime ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 그에게 강제로 초과 근무를 하게 했다.`, a: "work", w1: "to work", w2: "working", w3: "worked", exp: "사역동사 make는 '동사원형'을 취합니다." },
+                    { t: "사역동사 (let)", q: `${varData.s_en} let her ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 그녀가 가는 것을 허락했다.`, a: "go", w1: "to go", w2: "going", w3: "gone", exp: "사역동사 let은 '동사원형'을 취합니다." },
+                    { t: "사역동사 (have)", q: `${varData.s_en} had the assistant ________ you ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 비서가 당신에게 전화하도록 시켰다.`, a: "call", w1: "to call", w2: "calling", w3: "called", exp: "사역동사 have 능동태는 '동사원형'을 취합니다." },
+                    { t: "지각동사 (see)", q: `${varData.s_en} saw the man ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 한 남자가 뛰는 것을 보았다.`, a: "run", w1: "to run", w2: "ran", w3: "runs", exp: "지각동사 see는 '동사원형'이나 'V-ing'를 취합니다." },
+                    { t: "준사역동사 (get)", q: `${varData.s_en} got him ________ his mind ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 그가 마음을 바꾸도록 설득했다.`, a: "to change", w1: "change", w2: "changing", w3: "changed", exp: "get은 능동의 의미일 때 'to부정사'를 취합니다." },
+                    { t: "준사역동사 (help)", q: `${varData.s_en} helped us ________ the box ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 우리가 상자를 옮기는 것을 도왔다.`, a: "carry", w1: "carrying", w2: "carried", w3: "carries", exp: "help는 '동사원형'이나 'to부정사'를 취합니다." },
+                    { t: "지각동사 (watch)", q: `${varData.s_en} watched them ________ soccer ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 그들이 축구하는 것을 지켜보았다.`, a: "play", w1: "to play", w2: "played", w3: "plays", exp: "지각동사 watch는 '동사원형'이나 'V-ing'를 취합니다." },
+                    { t: "지각동사 (hear)", q: `${varData.s_en} heard the baby ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 아기가 우는 것을 들었다.`, a: "cry", w1: "to cry", w2: "cried", w3: "cries", exp: "지각동사 hear는 '동사원형'이나 'V-ing'를 취합니다." },
+                    { t: "사역동사 (make)", q: `${varData.s_en} made everyone ________ ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 모두를 웃게 만들었다.`, a: "laugh", w1: "to laugh", w2: "laughing", w3: "laughed", exp: "사역동사 make는 '동사원형'을 취합니다." },
+                    { t: "사역동사 (let)", q: `${varData.s_en} let me ________ the car ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 내가 차를 운전하게 해주었다.`, a: "drive", w1: "to drive", w2: "driving", w3: "driven", exp: "사역동사 let은 '동사원형'을 취합니다." },
+                    { t: "사역동사 (have)", q: `${varData.s_en} had the team ________ the report ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 팀이 보고서를 끝내게 시켰다.`, a: "finish", w1: "to finish", w2: "finishing", w3: "finished", exp: "사역동사 have 능동태는 '동사원형'을 취합니다." },
+                    { t: "지각동사 (see)", q: `${varData.s_en} saw the thief ________ the bag ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 도둑이 가방을 훔치는 것을 보았다.`, a: "steal", w1: "to steal", w2: "stolen", w3: "steals", exp: "지각동사 see는 '동사원형'이나 'V-ing'를 취합니다." },
+                    { t: "준사역동사 (help)", q: `${varData.s_en} helped me ________ the problem ${varData.c_en}.`, tr: `${varData.s_ko} ${varData.c_ko} 내가 문제를 푸는 것을 도왔다.`, a: "solve", w1: "solving", w2: "solved", w3: "solves", exp: "help는 '동사원형'이나 'to부정사'를 취합니다." }
+                ];
+                const item = types[i % 13];
+                return {
+                    type: item.t, question: item.q, translation: item.tr,
+                    options: [
+                        { text: item.a, isCorrect: true, explanation: item.exp },
+                        { text: item.w1, isCorrect: false, explanation: "to부정사나 다른 시제는 올 수 없습니다." },
+                        { text: item.w2, isCorrect: false, explanation: "수동태가 아니므로 과거분사는 틀립니다." },
+                        { text: item.w3, isCorrect: false, explanation: "동사의 단수/과거 변화형은 쓸 수 없습니다." }
+                    ]
+                };
+            })
+        ]
+    ];
+
+    const allSets = baseSets.map(set => {
+        let expandedSet = [];
+        while (expandedSet.length < 200) {
+            expandedSet = expandedSet.concat(set);
+        }
+        return expandedSet.slice(0, 200); 
+    });
+
+    const setNames = ["Set 1: 기본 보어 & To-v 필수 동사", "Set 2: 사역/지각/준사역 동사"];
+    const QUESTIONS_PER_ROUND = 10; 
+
+    let currentQuestions = [];
+    let currentQIndex = 0;
+    let score = 0;
+    
+    let sessionWrongAnswers = []; 
+    let globalWrongAnswers = [];  
+
+    // ★ 쿨다운 큐 (최근 3회 테스트에 출제된 문제의 '질문' 텍스트를 저장)
+    let testHistory = []; 
+
+    let isReviewMode = false;
+    let timerInterval;
+    let timeLeft = 15;
+    const TIME_LIMIT = 15;
+
+    let donutChartInst = null;
+    let barChartInst = null;
+
+    const setSelectionEl = document.getElementById('set-selection');
+    const quizScreenEl = document.getElementById('quiz-screen');
+    const resultScreenEl = document.getElementById('result-screen');
+    const setButtonsEl = document.getElementById('set-buttons');
+    const qTypeEl = document.getElementById('q-type');
+    const qProgressEl = document.getElementById('q-progress');
+    const qTextEl = document.getElementById('q-text');
+    const optionsContainer = document.getElementById('options-container');
+    const feedbackEl = document.getElementById('feedback');
+    const nextBtn = document.getElementById('next-btn');
+    const timerBar = document.getElementById('timer-bar');
+    const timeTextEl = document.getElementById('time-text');
+    const quitBtnEl = document.getElementById('quit-btn');
+
+    function shuffleArray(array) {
+        let shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    function updateMainReviewBtn() {
+        const reviewControls = document.getElementById('review-controls');
+        const countSpan = document.getElementById('wrong-count');
+        
+        if (globalWrongAnswers.length > 0) {
+            reviewControls.style.display = 'flex';
+            countSpan.innerText = globalWrongAnswers.length;
+        } else {
+            reviewControls.style.display = 'none';
+        }
+    }
+
+    // 확인창(confirm) 제거됨
+    function resetWrongAnswers() {
+        globalWrongAnswers = [];
+        updateMainReviewBtn();
+    }
+
+    function initApp() {
+        setButtonsEl.innerHTML = '';
+        allSets.forEach((set, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'set-btn';
+            btn.innerHTML = `<span>${setNames[i]}</span><span class="set-desc">문제은행 무작위 10제 🎲</span>`;
+            btn.onclick = () => startSet(i);
+            setButtonsEl.appendChild(btn);
+        });
+        updateMainReviewBtn();
+    }
+
+    function startSet(index) {
+        // ★ 쿨다운 로직 적용: 최근 3회 출제된 문항 배제
+        const blockedQuestions = testHistory.flat();
+        let availablePool = allSets[index].filter(q => !blockedQuestions.includes(q.question));
+        
+        // 쿨다운으로 인해 문제가 부족해질 비상 상황 대비
+        if (availablePool.length < QUESTIONS_PER_ROUND) {
+            availablePool = allSets[index]; 
+        }
+
+        let shuffledPool = shuffleArray(availablePool);
+        
+        // 현재 라운드 내에서 중복 출제 방지
+        let selected = [];
+        for (let q of shuffledPool) {
+            if (!selected.some(sq => sq.question === q.question)) {
+                selected.push(q);
+            }
+            if (selected.length === QUESTIONS_PER_ROUND) break;
+        }
+
+        currentQuestions = selected;
+
+        // ★ 테스트 히스토리에 현재 문제들 추가 및 오래된 기록 삭제 (3회 제한 유지)
+        testHistory.push(currentQuestions.map(q => q.question));
+        if (testHistory.length > 3) {
+            testHistory.shift();
+        }
+
+        isReviewMode = false;
+        resetQuizState();
+        setSelectionEl.style.display = 'none';
+        quizScreenEl.style.display = 'block';
+        quitBtnEl.style.display = 'block'; 
+        loadQuestion();
+    }
+
+    function startMainReview() {
+        if (globalWrongAnswers.length === 0) return;
+        currentQuestions = shuffleArray([...globalWrongAnswers]);
+        isReviewMode = true;
+        resetQuizState();
+        setSelectionEl.style.display = 'none';
+        quizScreenEl.style.display = 'block';
+        quitBtnEl.style.display = 'block'; 
+        loadQuestion();
+    }
+
+    function startReview() {
+        currentQuestions = [...sessionWrongAnswers];
+        isReviewMode = true;
+        resetQuizState();
+        resultScreenEl.style.display = 'none';
+        quizScreenEl.style.display = 'block';
+        quitBtnEl.style.display = 'block'; 
+        loadQuestion();
+    }
+
+    // 확인창(confirm) 제거됨
+    function quitQuiz() {
+        clearInterval(timerInterval);
+        goToMain();
+    }
+
+    function resetQuizState() {
+        currentQIndex = 0;
+        score = 0;
+        sessionWrongAnswers = [];
+    }
+
+    function loadQuestion() {
+        clearInterval(timerInterval);
+        feedbackEl.style.display = 'none';
+        nextBtn.style.display = 'none';
+        optionsContainer.innerHTML = '';
+        
+        const currentQ = currentQuestions[currentQIndex];
+        qTypeEl.textContent = isReviewMode ? `[오답복습] ${currentQ.type}` : currentQ.type;
+        qProgressEl.textContent = `${currentQIndex + 1} / ${currentQuestions.length}`;
+        qTextEl.innerText = currentQ.question;
+
+        let shuffledOptions = shuffleArray(currentQ.options);
+
+        shuffledOptions.forEach((option, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.textContent = `${index + 1}. ${option.text}`;
+            btn.onclick = () => checkAnswer(option, btn, shuffledOptions);
+            optionsContainer.appendChild(btn);
+        });
+
+        startTimer();
+    }
+
+    function startTimer() {
+        timeLeft = TIME_LIMIT;
+        updateTimerUI();
+        timerBar.classList.remove('warning', 'danger');
+        timeTextEl.classList.remove('warning', 'danger');
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimerUI();
+
+            if (timeLeft <= 5 && timeLeft > 2) {
+                timerBar.classList.add('warning');
+                timeTextEl.classList.add('warning');
+            } else if (timeLeft <= 2) {
+                timerBar.classList.remove('warning');
+                timeTextEl.classList.remove('warning');
+                timerBar.classList.add('danger');
+                timeTextEl.classList.add('danger');
+            }
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timeOut();
+            }
+        }, 1000);
+    }
+
+    function updateTimerUI() {
+        timeTextEl.innerText = `${timeLeft}초`;
+        timerBar.style.width = `${(timeLeft / TIME_LIMIT) * 100}%`;
+    }
+
+    function timeOut() {
+        const currentQ = currentQuestions[currentQIndex];
+        const allBtns = document.querySelectorAll('.option-btn');
+        allBtns.forEach(btn => btn.disabled = true);
+        
+        let correctBtnIndex = -1;
+        let correctOption = null;
+        
+        const optionsInDOM = Array.from(optionsContainer.children);
+        optionsInDOM.forEach((btn, idx) => {
+            const btnText = btn.textContent.substring(3);
+            const opt = currentQ.options.find(o => o.text === btnText);
+            if(opt && opt.isCorrect) {
+                correctBtnIndex = idx;
+                correctOption = opt;
+            }
+        });
+
+        sessionWrongAnswers.push(currentQ);
+        if (!globalWrongAnswers.some(q => q.question === currentQ.question)) {
+            globalWrongAnswers.push(currentQ);
+        }
+
+        if(correctBtnIndex !== -1) allBtns[correctBtnIndex].classList.add('correct');
+
+        feedbackEl.innerHTML = `
+            <div class="feedback-title" style="color: #b91c1c;">⏰ 시간 초과!</div>
+            <div class="explanation-box exp-translate">
+                <strong>[문장 해석]</strong><br> ${currentQ.translation}
+            </div>
+            <div class="explanation-box exp-correct">
+                <strong>[진짜 정답: ${correctOption.text}] 맞는 이유:</strong><br> ${correctOption.explanation}
+            </div>
+        `;
+        feedbackEl.style.display = 'block';
+        nextBtn.style.display = 'block';
+    }
+
+    function checkAnswer(selectedOption, selectedBtn, currentlyShuffledOptions) {
+        clearInterval(timerInterval);
+        const currentQ = currentQuestions[currentQIndex];
+        const allBtns = document.querySelectorAll('.option-btn');
+        allBtns.forEach(btn => btn.disabled = true);
+
+        const correctOption = currentlyShuffledOptions.find(opt => opt.isCorrect);
+        const correctBtnIndex = currentlyShuffledOptions.findIndex(opt => opt.isCorrect);
+
+        if (selectedOption.isCorrect) {
+            selectedBtn.classList.add('correct');
+            score++;
+
+            globalWrongAnswers = globalWrongAnswers.filter(q => q.question !== currentQ.question);
+
+            feedbackEl.innerHTML = `
+                <div class="feedback-title" style="color: #15803d;">✅ 정답입니다!</div>
+                <div class="explanation-box exp-translate">
+                    <strong>[문장 해석]</strong><br> ${currentQ.translation}
+                </div>
+                <div class="explanation-box exp-correct">
+                    <strong>[이유]</strong> ${selectedOption.explanation}
+                </div>
+            `;
+        } else {
+            selectedBtn.classList.add('wrong');
+            allBtns[correctBtnIndex].classList.add('correct');
+            
+            sessionWrongAnswers.push(currentQ);
+            if (!globalWrongAnswers.some(q => q.question === currentQ.question)) {
+                globalWrongAnswers.push(currentQ);
+            }
+
+            feedbackEl.innerHTML = `
+                <div class="feedback-title" style="color: #b91c1c;">❌ 오답입니다.</div>
+                <div class="explanation-box exp-translate">
+                    <strong>[문장 해석]</strong><br> ${currentQ.translation}
+                </div>
+                <div class="explanation-box exp-wrong">
+                    <strong>[선택한 오답: ${selectedOption.text}] 틀린 이유:</strong><br> ${selectedOption.explanation}
+                </div>
+                <div class="explanation-box exp-correct">
+                    <strong>[진짜 정답: ${correctOption.text}] 맞는 이유:</strong><br> ${correctOption.explanation}
+                </div>
+            `;
+        }
+        feedbackEl.style.display = 'block';
+        nextBtn.style.display = 'block';
+    }
+
+    function nextQuestion() {
+        currentQIndex++;
+        if (currentQIndex < currentQuestions.length) loadQuestion();
+        else showResult();
+    }
+
+    function renderCharts(correctCount, wrongCount) {
+        const donutCtx = document.getElementById('donutChart').getContext('2d');
+        const barCtx = document.getElementById('barChart').getContext('2d');
+
+        if (donutChartInst) donutChartInst.destroy();
+        if (barChartInst) barChartInst.destroy();
+
+        donutChartInst = new Chart(donutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['정답', '오답'],
+                datasets: [{
+                    data: [correctCount, wrongCount],
+                    backgroundColor: ['#10b981', '#ef4444'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    title: { display: true, text: '정답 비율 (도넛 차트)' }
+                }
+            }
+        });
+
+        barChartInst = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: ['결과 통계'],
+                datasets: [
+                    {
+                        label: '정답 수',
+                        data: [correctCount],
+                        backgroundColor: '#10b981',
+                        borderRadius: 5
+                    },
+                    {
+                        label: '오답 수',
+                        data: [wrongCount],
+                        backgroundColor: '#ef4444',
+                        borderRadius: 5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    title: { display: true, text: '정답 수치 (막대 차트)' }
+                }
+            }
+        });
+    }
+
+    function showResult() {
+        quizScreenEl.style.display = 'none';
+        quitBtnEl.style.display = 'none'; 
+        resultScreenEl.style.display = 'block';
+        
+        document.getElementById('final-score').innerText = `총 ${currentQuestions.length}문제 중 ${score}문제 정답!`;
+        const msgEl = document.getElementById('result-msg');
+        const reviewBtn = document.getElementById('review-btn');
+        
+        renderCharts(score, sessionWrongAnswers.length);
+
+        if (score === currentQuestions.length) {
+            document.getElementById('result-title').innerText = "🎉 완벽합니다!";
+            msgEl.innerText = "이번에 뽑힌 문제들을 완벽하게 마스터하셨네요! 메인으로 돌아가서 새로운 문제에 도전해 보세요.";
+            reviewBtn.style.display = 'none';
+        } else {
+            document.getElementById('result-title').innerText = "훈련 완료";
+            msgEl.innerText = `${sessionWrongAnswers.length}문제를 아쉽게 놓쳤습니다. 복습을 통해 취약점을 보완하세요.`;
+            reviewBtn.style.display = 'block';
+        }
+    }
+
+    function goToMain() {
+        resultScreenEl.style.display = 'none';
+        quizScreenEl.style.display = 'none';
+        quitBtnEl.style.display = 'none'; 
+        setSelectionEl.style.display = 'block';
+        updateMainReviewBtn(); 
+    }
+
+    window.onload = initApp;
+</script>
+
+</body>
+</html>
